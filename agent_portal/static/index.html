@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Агенты — локальный портал</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a5bd7'/%3E%3Cpath d='M6 20h5l3-8 4 12 3-7h5' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="shell">
+    <nav class="rail" aria-label="Разделы">
+      <a class="brand" href="#/" aria-label="Портал агентов">
+        <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect width="32" height="32" rx="7" fill="var(--accent)"/><path d="M6 20h5l3-8 4 12 3-7h5" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Агенты</span>
+      </a>
+      <a href="#/" data-nav="overview">Обзор</a>
+      <a href="#/models" data-nav="models">Модели</a>
+      <a href="#/discover" data-nav="discover">Обнаружение</a>
+      <a href="#/events" data-nav="events">Журнал <span class="badge" id="alert-count" hidden></span></a>
+      <div class="rail-foot">
+        <span class="conn" id="conn" data-state="connecting">Подключение…</span>
+        <button class="ghost small" id="theme-toggle" type="button">Тема</button>
+      </div>
+    </nav>
+    <main id="view" tabindex="-1"></main>
+  </div>
+
+  <dialog id="token-dialog">
+    <form method="dialog" id="token-form">
+      <h2>Нужен токен доступа</h2>
+      <p>Портал запущен с PORTAL_TOKEN. Введите его, чтобы продолжить.</p>
+      <label>Токен <input type="password" name="token" required autocomplete="current-password"></label>
+      <p class="form-error" id="token-error" hidden></p>
+      <div class="actions"><button class="primary" type="submit">Войти</button></div>
+    </form>
+  </dialog>
+
+  <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>

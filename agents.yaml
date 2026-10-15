@@ -1,0 +1,44 @@
+# Local AI agent portal configuration.
+# Edited by the portal UI; manual edits are picked up on restart.
+backends:
+- name: Ollama
+  type: ollama
+  url: http://127.0.0.1:11434
+- name: LM Studio
+  type: openai
+  url: http://127.0.0.1:1234/v1
+agents:
+- id: researcher
+  name: Исследователь
+  description: Демо-агент, отвечающий на вопросы по локальным заметкам
+  kind: process
+  command: '{python} examples/demo_agent.py --name researcher --port 8711'
+  autostart: true
+  restart_policy: on-failure
+  max_restarts: 5
+  max_memory_mb: 512
+  health_url: http://127.0.0.1:8711/health
+  task_url: http://127.0.0.1:8711/task
+  tags:
+  - demo
+  - rag
+- id: flaky-coder
+  name: Нестабильный кодер
+  description: Демо-агент, который падает через минуту — показывает автоперезапуск
+  kind: process
+  command: '{python} examples/demo_agent.py --name coder --port 8712 --fail-after 60'
+  autostart: false
+  restart_policy: on-failure
+  max_restarts: 3
+  health_url: http://127.0.0.1:8712/health
+  task_url: http://127.0.0.1:8712/task
+  tags:
+  - demo
+- id: ollama
+  name: Ollama
+  description: Сервер моделей, запущенный вне портала (только наблюдение)
+  kind: external
+  process_match: ^\S*ollama(\.exe)?\s+serve
+  health_url: http://127.0.0.1:11434/api/version
+  tags:
+  - runtime
