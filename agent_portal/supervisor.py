@@ -19,6 +19,7 @@ from .schemas import AgentSpec
 STABLE_SECONDS = 60
 MAX_BACKOFF = 30
 LOG_ROTATE_BYTES = 10 * 1024 * 1024
+EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "examples"
 
 
 @dataclass
@@ -41,8 +42,9 @@ class Runtime:
 def build_command(spec: AgentSpec) -> list[str]:
     raw = spec.command or []
     parts = shlex.split(raw, posix=os.name == "posix") if isinstance(raw, str) else list(raw)
-    # "{python}" lets configs run scripts with the portal's own interpreter.
-    return [p.replace("{python}", sys.executable) for p in parts]
+    # "{python}" runs scripts with the portal's own interpreter; "{examples}" points
+    # at the bundled example agents wherever the portal was started from.
+    return [p.replace("{python}", sys.executable).replace("{examples}", str(EXAMPLES_DIR)) for p in parts]
 
 
 class Supervisor:

@@ -83,9 +83,13 @@ class Portal:
         sample = self.monitor.samples.get(agent_id)
         health = self.monitor.health.get(agent_id)
         if spec.kind == "external":
-            state = "running" if sample and sample.pids else ("unknown" if not spec.process_match else "missing")
-            if not spec.process_match and health:
-                state = "running" if health.ok else "missing"
+            # Either signal is enough: the process was found, or its health endpoint answers.
+            if (sample and sample.pids) or (health and health.ok):
+                state = "running"
+            elif health is None and not (sample and spec.process_match):
+                state = "unknown"
+            else:
+                state = "missing"
         else:
             state = rt.state
         pids = sample.pids if sample else ([rt.pid] if rt.pid else [])

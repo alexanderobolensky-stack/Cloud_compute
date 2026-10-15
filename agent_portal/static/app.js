@@ -659,8 +659,17 @@ function tabTask(root, agent) {
       const head = document.createElement("div");
       head.className = "task-head";
       head.textContent = `${input} — HTTP ${res.status}, ${res.elapsed_s} с`;
+      const r = res.response;
       const body = document.createElement("pre");
-      body.textContent = typeof res.response === "string" ? res.response : JSON.stringify(res.response, null, 2);
+      if (r && typeof r === "object" && typeof r.answer === "string") {
+        // Agents that return {"answer": ...} get a readable reply plus a short stats line.
+        body.className = "task-answer";
+        body.textContent = r.answer;
+        const meta = [r.model, r.tokens && `токенов: ${r.tokens}`, r.tokens_per_s && `${r.tokens_per_s} ток/с`].filter(Boolean);
+        if (meta.length) head.textContent += `, ${meta.join(", ")}`;
+      } else {
+        body.textContent = typeof r === "string" ? r : JSON.stringify(r, null, 2);
+      }
       li.append(head, body);
       history.prepend(li);
       $("#task-status").textContent = "";
@@ -711,6 +720,14 @@ async function renderForm(id) {
         <h1>${editing ? "Настройки агента" : "Новый агент"}</h1>
       </div>
     </header>
+    ${editing ? "" : `<section class="quickstart" id="quickstart" aria-labelledby="qs-title">
+      <h2 id="qs-title">Агент на модели из Ollama</h2>
+      <p class="muted" id="qs-hint">Проверяю, какие модели есть в Ollama…</p>
+      <div class="qs-row" hidden>
+        <label>Модель <select id="qs-model"></select></label>
+        <button type="button" class="primary" id="qs-fill">Заполнить форму</button>
+      </div>
+    </section>`}
     <form class="agent-form" id="agent-form" novalidate>
       <fieldset>
         <legend>Как портал работает с агентом</legend>
@@ -727,7 +744,7 @@ async function renderForm(id) {
       <label>Описание <input name="description" value="${esc(spec.description)}"></label>
       <div data-kind="process">
         <label>Команда запуска <input name="command" value="${esc(cmd)}" placeholder="{python} my_agent.py --port 8000">
-          <small>{python} подставит интерпретатор, на котором работает портал.</small></label>
+          <small>Команда, которой вы запускаете агента в терминале. {python} подставит интерпретатор портала, {examples} — папку с примерами агентов.</small></label>
         <label>Рабочий каталог <input name="cwd" value="${esc(spec.cwd ?? "")}" placeholder="по умолчанию — каталог портала"></label>
         <label>Переменные окружения <textarea name="env" rows="3" placeholder="OPENAI_BASE_URL=http://127.0.0.1:11434/v1">${esc(env)}</textarea>
           <small>По одной на строку: ИМЯ=значение.</small></label>
@@ -762,6 +779,7 @@ async function renderForm(id) {
     </form>`;
 
   const form = $("#agent-form");
+  if (!editing) setupQuickstart(form);
   const syncKind = () => {
     const kind = form.kind.value;
     $$("[data-kind]", form).forEach((el) => { el.hidden = el.dataset.kind !== kind; });
@@ -810,6 +828,62 @@ async function renderForm(id) {
       error.textContent = `Не сохранено: ${err.message}`;
       error.hidden = false;
     }
+  });
+}
+
+// Fills the form with a ready-made agent (examples/ollama_agent.py) for a chosen Ollama model.
+async function setupQuickstart(form) {
+  const hint = $("#qs-hint");
+  const row = $(".qs-row");
+  let models = [];
+  let backendUrl = "http://127.0.0.1:11434";
+  try {
+    const backends = await api("/api/backends");
+    const ollama = backends.find((b) => b.type === "ollama" && b.online);
+    if (ollama) {
+      models = ollama.models.map((m) => m.name);
+      backendUrl = ollama.url;
+    }
+  } catch { /* hint below explains */ }
+  if (!models.length) {
+    hint.textContent = "Ollama не отвечает или в ней нет моделей. Запустите Ollama и скачайте модель: ollama pull qwen2.5:7b — затем обновите страницу.";
+    return;
+  }
+  hint.textContent = "Выберите модель — портал сам подставит команду запуска, порт и адреса. Останется нажать «Добавить агента».";
+  row.hidden = false;
+  const select = $("#qs-model");
+  select.innerHTML = models.map((m) => `<option>${esc(m)}</option>`).join("");
+  select.value = models.find((m) => m.toLowerCase().includes("qwen")) ?? models[0];
+
+  $("#qs-fill").addEventListener("click", async () => {
+    const model = select.value;
+    const used = new Set();
+    const agents = await api("/api/agents");
+    await Promise.all(agents.map(async (a) => {
+      const { spec } = await api(`/api/agents/${encodeURIComponent(a.id)}`);
+      const text = `${spec.command ?? ""} ${spec.health_url ?? ""} ${spec.task_url ?? ""}`;
+      for (const m of text.matchAll(/(?:--port\s+|:)(\d{4,5})\b/g)) used.add(Number(m[1]));
+    }));
+    let port = 8720;
+    while (used.has(port)) port += 1;
+    const base = model.split(":")[0].replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+    let id = `${base}-agent`;
+    for (let n = 2; agents.some((a) => a.id === id); n += 1) id = `${base}-agent-${n}`;
+    form.querySelector("input[name=kind][value=process]").checked = true;
+    form.querySelector("input[name=kind][value=process]").dispatchEvent(new Event("change"));
+    form.name.value = `Ассистент на ${model}`;
+    form.id.value = id;
+    form.id.dataset.touched = "1";
+    form.description.value = `Отвечает на задачи через модель ${model} в Ollama`;
+    form.command.value = `{python} {examples}/ollama_agent.py --port ${port}`;
+    form.env.value = `MODEL=${model}\nOLLAMA_URL=${backendUrl}`;
+    form.restart_policy.value = "on-failure";
+    form.autostart.checked = true;
+    form.health_url.value = `http://127.0.0.1:${port}/health`;
+    form.task_url.value = `http://127.0.0.1:${port}/task`;
+    form.tags.value = "ollama";
+    toast("Форма заполнена — проверьте и нажмите «Добавить агента»", "good");
+    form.querySelector("button[type=submit]").focus();
   });
 }
 

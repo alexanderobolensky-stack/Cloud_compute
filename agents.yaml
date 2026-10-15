@@ -12,7 +12,7 @@ agents:
   name: Ассистент на Qwen
   description: Отвечает на задачи через локальную модель в Ollama
   kind: process
-  command: '{python} examples/ollama_agent.py --port 8720'
+  command: '{python} {examples}/ollama_agent.py --port 8720'
   env:
     OLLAMA_URL: http://127.0.0.1:11434
     MODEL: ''
@@ -28,7 +28,7 @@ agents:
   name: Исследователь
   description: Демо-агент, отвечающий на вопросы по локальным заметкам
   kind: process
-  command: '{python} examples/demo_agent.py --name researcher --port 8711'
+  command: '{python} {examples}/demo_agent.py --name researcher --port 8711'
   autostart: true
   restart_policy: on-failure
   max_restarts: 5
@@ -42,7 +42,7 @@ agents:
   name: Нестабильный кодер
   description: Демо-агент, который падает через минуту — показывает автоперезапуск
   kind: process
-  command: '{python} examples/demo_agent.py --name coder --port 8712 --fail-after 60'
+  command: '{python} {examples}/demo_agent.py --name coder --port 8712 --fail-after 60'
   autostart: false
   restart_policy: on-failure
   max_restarts: 3
