@@ -8,6 +8,22 @@ backends:
   type: openai
   url: http://127.0.0.1:1234/v1
 agents:
+- id: qwen-assistant
+  name: Ассистент на Qwen
+  description: Отвечает на задачи через локальную модель в Ollama
+  kind: process
+  command: '{python} examples/ollama_agent.py --port 8720'
+  env:
+    OLLAMA_URL: http://127.0.0.1:11434
+    MODEL: ''
+  autostart: true
+  restart_policy: on-failure
+  max_restarts: 5
+  health_url: http://127.0.0.1:8720/health
+  task_url: http://127.0.0.1:8720/task
+  tags:
+  - ollama
+  - qwen
 - id: researcher
   name: Исследователь
   description: Демо-агент, отвечающий на вопросы по локальным заметкам

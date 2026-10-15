@@ -37,9 +37,9 @@ class AgentSpec(BaseModel):
     @model_validator(mode="after")
     def _check_kind(self) -> "AgentSpec":
         if self.kind == "process" and not self.command:
-            raise ValueError("process agents need a command")
+            raise ValueError("укажите команду запуска агента — или выберите «Только наблюдать»")
         if self.kind == "external" and not (self.process_match or self.health_url):
-            raise ValueError("external agents need process_match or health_url")
+            raise ValueError("укажите шаблон командной строки или адрес проверки здоровья")
         return self
 
 

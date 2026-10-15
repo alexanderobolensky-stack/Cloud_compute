@@ -68,7 +68,11 @@ async function api(path, { method = "GET", body } = {}) {
     try {
       const data = await resp.json();
       detail = typeof data.detail === "string" ? data.detail
-        : (data.detail ?? []).map((d) => `${(d.loc ?? []).slice(1).join(".")}: ${d.msg}`).join("; ") || detail;
+        : (data.detail ?? []).map((d) => {
+          const msg = String(d.msg ?? "").replace(/^Value error, /, "");
+          const field = (d.loc ?? []).slice(1).join(".");
+          return field ? `${field}: ${msg}` : msg;
+        }).join("; ") || detail;
     } catch { /* keep status text */ }
     throw new Error(detail);
   }
@@ -787,6 +791,14 @@ async function renderForm(id) {
     };
     const error = $("#form-error");
     error.hidden = true;
+    const missing = body.kind === "process" && !body.command ? "Укажите команду запуска — или выберите «Только наблюдать», если агент запускается без портала."
+      : body.kind === "external" && !body.process_match && !body.health_url ? "Укажите шаблон командной строки или адрес проверки здоровья."
+      : !body.name ? "Укажите название агента." : null;
+    if (missing) {
+      error.textContent = missing;
+      error.hidden = false;
+      return;
+    }
     try {
       const saved = editing
         ? await api(`/api/agents/${encodeURIComponent(id)}`, { method: "PUT", body })
