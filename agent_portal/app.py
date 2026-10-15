@@ -26,6 +26,16 @@ from .supervisor import Supervisor
 STATIC = Path(__file__).parent / "static"
 
 
+class NoCacheStatic(StaticFiles):
+    """Static files that the browser revalidates on every load, so a portal
+    update is never hidden behind a cached app.js."""
+
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 class Portal:
     """Wires the store, supervisor and monitor together."""
 
@@ -339,7 +349,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     # UI ---------------------------------------------------------------------
 
-    app.mount("/static", StaticFiles(directory=STATIC), name="static")
+    app.mount("/static", NoCacheStatic(directory=STATIC), name="static")
 
     @app.get("/", include_in_schema=False)
     async def index():

@@ -1110,6 +1110,6 @@ function initTheme() {
 
 initTheme();
 window.addEventListener("hashchange", () => { route(); view.focus({ preventScroll: true }); });
-api("/api/info").then(() => { connectLive(); route(); }).catch((err) => {
+api("/api/info").then((info) => { $("#version").textContent = `Версия ${info.version}`; connectLive(); route(); }).catch((err) => {
   view.innerHTML = `<div class="empty"><h1>Портал не отвечает</h1><p>${esc(err.message)}</p></div>`;
 });

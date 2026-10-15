@@ -120,6 +120,7 @@ code { font-family: var(--mono); font-size: 0.9em; background: var(--surface-2);
 .rail .brand { color: var(--ink); font-weight: 700; font-size: 1.05rem; margin-bottom: 14px; padding-left: 6px; }
 .rail .brand:hover { background: none; }
 .rail-foot { margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding: 0 6px; }
+.version { font-size: 0.8rem; }
 .badge { margin-left: auto; background: var(--crit); color: #fff; border-radius: 999px; font-size: 0.75rem; padding: 0 7px; font-weight: 600; }
 .conn { font-size: 0.85rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
 .conn::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
